@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Button, Table, Modal, Form, InputNumber, DatePicker, Select, Tag, Badge, Tabs } from 'antd';
-import { Plus, Briefcase, UserCheck, Star, List, Map as MapIcon } from 'lucide-react';
-import { MapaTrabalhadores } from '../components/MapaTrabalhadores';
+import { Button, Table, Modal, Form, InputNumber, DatePicker, Select, Tag, Badge } from 'antd';
+import { Plus, Briefcase, UserCheck, Star, List } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 const { RangePicker } = DatePicker;
@@ -12,10 +11,10 @@ export const EmpresaView: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCandidatosModalOpen, setIsCandidatosModalOpen] = useState(false);
   const [selectedVagaId, setSelectedVagaId] = useState<string | null>(null);
-  
+
   const [isPerfilModalOpen, setIsPerfilModalOpen] = useState(false);
   const [trabalhadorPerfilId, setTrabalhadorPerfilId] = useState<string | null>(null);
-  
+
   const [form] = Form.useForm();
 
   const handleOk = () => {
@@ -85,7 +84,7 @@ export const EmpresaView: React.FC = () => {
         if (status === 'Buscando...') color = 'orange';
         if (status === 'Preenchida') color = 'green';
         if (status === 'Preenchida por Operador') color = 'purple';
-        
+
         return (
           <div className="flex flex-col gap-1 items-start">
             <Tag color={color}>{status}</Tag>
@@ -102,10 +101,10 @@ export const EmpresaView: React.FC = () => {
       render: (_: any, record: any) => {
         if (record.status === 'Buscando...' && record.candidatosIds?.length > 0) {
           return (
-            <Button 
-              type="primary" 
-              size="small" 
-              icon={<UserCheck size={14} />} 
+            <Button
+              type="primary"
+              size="small"
+              icon={<UserCheck size={14} />}
               onClick={() => abrirModalCandidatos(record.id)}
               className="bg-indigo-600 hover:bg-indigo-700 text-xs flex items-center"
             >
@@ -123,10 +122,10 @@ export const EmpresaView: React.FC = () => {
   const vagasPreenchidas = vagasDaEmpresa.filter(v => v.status !== 'Buscando...').length;
 
   const vagaSelecionada = vagas.find(v => v.id === selectedVagaId);
-  const candidatos = vagaSelecionada 
+  const candidatos = vagaSelecionada
     ? trabalhadoresPendentes
-        .filter(t => vagaSelecionada.candidatosIds.includes(t.id))
-        .sort((a, b) => b.score - a.score)
+      .filter(t => vagaSelecionada.candidatosIds.includes(t.id))
+      .sort((a, b) => b.score - a.score)
     : [];
 
 
@@ -165,7 +164,7 @@ export const EmpresaView: React.FC = () => {
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><List size={18} className="text-purple-600"/> Minhas Solicitações</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><List size={18} className="text-purple-600" /> Minhas Solicitações</h2>
         <Table dataSource={vagasDaEmpresa} columns={columns} rowKey="id" pagination={{ pageSize: 5 }} />
       </div>
 
@@ -228,9 +227,9 @@ export const EmpresaView: React.FC = () => {
             <p className="text-gray-500 text-center">Nenhum candidato aguardando no momento.</p>
           ) : (
             candidatos.map(c => {
-              const scoreColor = c.score >= 90 ? 'bg-green-100 text-green-700 border-green-200' : 
-                                 c.score >= 70 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 
-                                 'bg-red-100 text-red-700 border-red-200';
+              const scoreColor = c.score >= 90 ? 'bg-green-100 text-green-700 border-green-200' :
+                c.score >= 70 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                  'bg-red-100 text-red-700 border-red-200';
               return (
                 <div key={c.id} className="flex justify-between items-center p-3 border border-gray-200 rounded-lg shadow-sm bg-gray-50 hover:bg-white transition-colors">
                   <div>
@@ -246,13 +245,13 @@ export const EmpresaView: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        type="default" 
+                      <Button
+                        type="default"
                         onClick={() => abrirPerfil(c.id)}
                       >
                         Ver Perfil
                       </Button>
-                      <Button 
+                      <Button
                         danger
                         onClick={() => {
                           recusarCandidato(vagaSelecionada!.id, c.id);
@@ -260,8 +259,8 @@ export const EmpresaView: React.FC = () => {
                       >
                         Recusar
                       </Button>
-                      <Button 
-                        type="primary" 
+                      <Button
+                        type="primary"
                         className="bg-green-600 hover:bg-green-700"
                         onClick={() => {
                           aprovarCandidato(vagaSelecionada!.id, c.id);
@@ -295,7 +294,7 @@ export const EmpresaView: React.FC = () => {
             <div className="mt-4">
               <h3 className="text-xl font-bold text-gray-800">{t.nome}</h3>
               <p className="text-gray-500 mb-4">{t.funcoes.join(' • ')}</p>
-              
+
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
                 <h4 className="font-bold text-gray-700 mb-2">Resumo de Qualidade</h4>
                 <div className="flex justify-between items-center">
