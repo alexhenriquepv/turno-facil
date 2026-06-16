@@ -8,7 +8,7 @@ import { format, parseISO } from 'date-fns';
 const { RangePicker } = DatePicker;
 
 export const EmpresaView: React.FC = () => {
-  const { vagas, adicionarVaga, empresaLogada, trabalhadoresPendentes, aprovarCandidato } = useAppStore();
+  const { vagas, adicionarVaga, empresaLogada, trabalhadoresPendentes, aprovarCandidato, recusarCandidato } = useAppStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCandidatosModalOpen, setIsCandidatosModalOpen] = useState(false);
   const [selectedVagaId, setSelectedVagaId] = useState<string | null>(null);
@@ -129,11 +129,7 @@ export const EmpresaView: React.FC = () => {
         .sort((a, b) => b.score - a.score)
     : [];
 
-  const todosCandidatosIds = Array.from(new Set(
-    vagasDaEmpresa
-      .filter(v => v.status === 'Buscando...')
-      .flatMap(v => v.candidatosIds)
-  ));
+
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-4">
@@ -168,30 +164,10 @@ export const EmpresaView: React.FC = () => {
         </div>
       </div>
 
-      <Tabs 
-        defaultActiveKey="1"
-        type="card"
-        items={[
-          {
-            key: '1',
-            label: <span className="font-semibold px-4 flex items-center gap-2"><List size={16}/> Minhas Solicitações</span>,
-            children: (
-              <div className="bg-white p-6 rounded-b-lg rounded-tr-lg shadow-sm border border-gray-100">
-                <Table dataSource={vagasDaEmpresa} columns={columns} rowKey="id" pagination={{ pageSize: 5 }} />
-              </div>
-            )
-          },
-          {
-            key: '2',
-            label: <span className="font-semibold px-4 flex items-center gap-2"><MapIcon size={16}/> Radar de Talentos</span>,
-            children: (
-              <div className="bg-white p-2 rounded-b-lg rounded-tr-lg shadow-sm border border-gray-100">
-                <MapaTrabalhadores candidatosFiltradosIds={todosCandidatosIds} />
-              </div>
-            )
-          }
-        ]}
-      />
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><List size={18} className="text-purple-600"/> Minhas Solicitações</h2>
+        <Table dataSource={vagasDaEmpresa} columns={columns} rowKey="id" pagination={{ pageSize: 5 }} />
+      </div>
 
       <Modal
         title={<div className="flex items-center gap-2"><Briefcase size={20} className="text-purple-600" /> Nova Solicitação de Profissional</div>}
@@ -275,6 +251,14 @@ export const EmpresaView: React.FC = () => {
                         onClick={() => abrirPerfil(c.id)}
                       >
                         Ver Perfil
+                      </Button>
+                      <Button 
+                        danger
+                        onClick={() => {
+                          recusarCandidato(vagaSelecionada!.id, c.id);
+                        }}
+                      >
+                        Recusar
                       </Button>
                       <Button 
                         type="primary" 

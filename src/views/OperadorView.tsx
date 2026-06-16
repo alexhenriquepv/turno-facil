@@ -6,7 +6,7 @@ import { format, parseISO } from 'date-fns';
 import { MapaTrabalhadores } from '../components/MapaTrabalhadores';
 
 export const OperadorView: React.FC = () => {
-  const { vagas, trabalhadoresPendentes, aprovarTrabalhador, rejeitarTrabalhador, forcarAlocacao, aprovarCandidato, desvincularTrabalhador, empresaLogada } = useAppStore();
+  const { vagas, trabalhadoresPendentes, aprovarTrabalhador, rejeitarTrabalhador, forcarAlocacao, aprovarCandidato, desvincularTrabalhador, empresaLogada, recusarCandidato } = useAppStore();
 
   const [filtroEmpresa, setFiltroEmpresa] = useState('');
   const [filtroFuncao, setFiltroFuncao] = useState('');
@@ -324,6 +324,14 @@ export const OperadorView: React.FC = () => {
                         onClick={() => abrirPerfil(c.id)}
                       >
                         Ver Perfil
+                      </Button>
+                      <Button 
+                        danger
+                        onClick={() => {
+                          recusarCandidato(vagaSelecionada!.id, c.id);
+                        }}
+                      >
+                        Recusar
                       </Button>
                       <Button 
                         type="primary" 

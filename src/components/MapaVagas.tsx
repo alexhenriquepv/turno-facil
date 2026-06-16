@@ -36,7 +36,7 @@ const vagaIcon = L.divIcon({
 export const MapaVagas: React.FC = () => {
   const { vagas, empresaLogada, candidatarVaga, trabalhadorLogado } = useAppStore();
 
-  const vagasDisponiveis = vagas.filter(v => v.status === 'Buscando...');
+  const vagasDisponiveis = vagas.filter(v => v.status === 'Buscando...' && !v.candidatosRecusadosIds?.includes(trabalhadorLogado.id));
   
   // Foco inicial em Manaus
   const position: [number, number] = [-3.1190, -60.0217];

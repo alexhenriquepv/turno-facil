@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { MapPin, Clock, CheckCircle, Building, ShieldCheck, DollarSign, List, Map as MapIcon } from 'lucide-react';
+import { MapPin, Clock, CheckCircle, X, Building, ShieldCheck, DollarSign, List, Map as MapIcon } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { MapaVagas } from '../components/MapaVagas';
 
@@ -8,8 +8,14 @@ export const TrabalhadorView: React.FC = () => {
   const { vagas, candidatarVaga, trabalhadorLogado, empresaLogada } = useAppStore();
   const [viewMode, setViewMode] = useState<'lista' | 'mapa'>('lista');
 
-  const vagasDisponiveis = vagas.filter(v => v.status === 'Buscando...');
+  const vagasDisponiveis = vagas.filter(v => v.status === 'Buscando...' && !v.candidatosRecusadosIds?.includes(trabalhadorLogado.id));
   const vagasFechadas = vagas.filter(v => v.status !== 'Buscando...' && v.trabalhadorId === trabalhadorLogado.id);
+  const vagasRecusadas = vagas.filter(v => v.candidatosRecusadosIds?.includes(trabalhadorLogado.id));
+
+  const historico = [
+    ...vagasFechadas.map(v => ({ ...v, tipoHistorico: 'concluida' })),
+    ...vagasRecusadas.map(v => ({ ...v, tipoHistorico: 'recusada' }))
+  ].sort((a, b) => new Date(b.dataHoraInicio).getTime() - new Date(a.dataHoraInicio).getTime());
 
   const ganhosMensais = vagasFechadas.reduce((total, vaga) => total + vaga.valor, 0);
 
@@ -152,20 +158,27 @@ export const TrabalhadorView: React.FC = () => {
             )
           )}
 
-          {vagasFechadas.length > 0 && (
+          {historico.length > 0 && (
             <div className="mt-8 mb-4">
-              <h2 className="text-base font-bold text-gray-400 mb-3 px-1">Histórico & Preenchidas</h2>
+              <h2 className="text-base font-bold text-gray-400 mb-3 px-1">Histórico de Atividades</h2>
               <div className="flex flex-col gap-3 opacity-70">
-                {vagasFechadas.map(vaga => (
-                  <div key={vaga.id} className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex justify-between items-center">
+                {historico.map(vaga => (
+                  <div key={`${vaga.id}-${vaga.tipoHistorico}`} className={`bg-gray-50 border rounded-xl p-3 flex justify-between items-center ${vaga.tipoHistorico === 'recusada' ? 'border-red-100 opacity-80' : 'border-gray-200'}`}>
                     <div>
-                      <h4 className="font-bold text-gray-700 text-sm leading-tight">{vaga.funcao}</h4>
+                      <h4 className={`font-bold text-sm leading-tight ${vaga.tipoHistorico === 'recusada' ? 'text-gray-500 line-through' : 'text-gray-700'}`}>{vaga.funcao}</h4>
                       <p className="text-[10px] text-gray-500 font-medium mt-1">{vaga.nomeEmpresa} - {format(parseISO(vaga.dataHoraInicio), "dd/MM/yyyy")}</p>
                     </div>
-                    <div className="flex items-center text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                      <CheckCircle size={14} className="mr-1.5" />
-                      <span className="text-xs font-bold flex gap-1">Concluída <span className="text-green-800">(+ R$ {vaga.valor.toFixed(0)})</span></span>
-                    </div>
+                    {vaga.tipoHistorico === 'concluida' ? (
+                      <div className="flex items-center text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                        <CheckCircle size={14} className="mr-1.5" />
+                        <span className="text-xs font-bold flex gap-1">Concluída <span className="text-green-800">(+ R$ {vaga.valor.toFixed(0)})</span></span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-red-500 bg-red-50 px-2 py-1 rounded-lg">
+                        <X size={14} className="mr-1.5" />
+                        <span className="text-xs font-bold">Recusada</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
