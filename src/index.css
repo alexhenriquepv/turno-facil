@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+body {
+  margin: 0;
+  background-color: #f0f2f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+}
+
+/* Base resets or common utilities */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
