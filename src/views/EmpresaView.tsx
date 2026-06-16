@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Button, Table, Modal, Form, InputNumber, DatePicker, Select, Tag, Card, Row, Col, Badge, Tabs } from 'antd';
+import { Button, Table, Modal, Form, InputNumber, DatePicker, Select, Tag, Badge, Tabs } from 'antd';
 import { Plus, Briefcase, UserCheck, Star, List, Map as MapIcon } from 'lucide-react';
 import { MapaTrabalhadores } from '../components/MapaTrabalhadores';
 import { format, parseISO } from 'date-fns';
