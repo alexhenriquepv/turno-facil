@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { ArrowRight, Star, ShieldCheck, Clock, MapPin, Briefcase } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Clock, MapPin, Briefcase } from 'lucide-react';
 
 import heroImg from '../assets/prints/operador_mapa.png';
 import empresaDash from '../assets/prints/empresa_dashboard.png';
