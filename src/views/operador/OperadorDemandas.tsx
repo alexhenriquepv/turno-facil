@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Table, Button, Card, Badge, Tag, Tooltip, Input, Space, Modal, Select } from 'antd';
-import { UserPlus, AlertTriangle, Search, UserMinus, UserCheck, Star } from 'lucide-react';
+import { UserPlus, Search, UserMinus, UserCheck, Star, MessageSquare, Briefcase } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { OperadorService } from '../../services/operadorService';
 import { useAppStore } from '../../store/useAppStore';
@@ -10,6 +10,10 @@ export const OperadorDemandas: React.FC = () => {
 
   const [filtroEmpresa, setFiltroEmpresa] = useState('');
   const [filtroFuncao, setFiltroFuncao] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'ativas' | 'encerradas' | 'todas'>('ativas');
+
+  const [isDetalhesModalOpen, setIsDetalhesModalOpen] = useState(false);
+  const [vagaDetalhesId, setVagaDetalhesId] = useState<string | null>(null);
 
   const [modalAlocacaoVisible, setModalAlocacaoVisible] = useState(false);
   const [vagaSelecionadaAlocacao, setVagaSelecionadaAlocacao] = useState<string | null>(null);
@@ -21,20 +25,28 @@ export const OperadorDemandas: React.FC = () => {
   const [isPerfilModalOpen, setIsPerfilModalOpen] = useState(false);
   const [trabalhadorPerfilId, setTrabalhadorPerfilId] = useState<string | null>(null);
 
-  const abrirModalAlocacao = (vagaId: string) => {
+  const abrirModalAlocacao = (e: React.MouseEvent, vagaId: string) => {
+    e.stopPropagation();
     setVagaSelecionadaAlocacao(vagaId);
     setTrabalhadorSelecionado(null);
     setModalAlocacaoVisible(true);
   };
 
-  const abrirModalCandidatos = (vagaId: string) => {
+  const abrirModalCandidatos = (e: React.MouseEvent, vagaId: string) => {
+    e.stopPropagation();
     setSelectedVagaId(vagaId);
     setIsCandidatosModalOpen(true);
   };
 
-  const abrirPerfil = (id: string) => {
+  const abrirPerfil = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     setTrabalhadorPerfilId(id);
     setIsPerfilModalOpen(true);
+  };
+
+  const abrirDetalhes = (vagaId: string) => {
+    setVagaDetalhesId(vagaId);
+    setIsDetalhesModalOpen(true);
   };
 
   const confirmarAlocacao = async () => {
@@ -47,7 +59,18 @@ export const OperadorDemandas: React.FC = () => {
   const vagasFiltradas = vagas.filter(v => {
     const matchEmpresa = v.nomeEmpresa.toLowerCase().includes(filtroEmpresa.toLowerCase());
     const matchFuncao = v.funcao.toLowerCase().includes(filtroFuncao.toLowerCase());
-    return matchEmpresa && matchFuncao;
+    
+    const isAvaliada = !!v.avaliacaoTrabalhador;
+    const isConcluida = v.status === 'Preenchida' || v.status === 'Preenchida por Operador';
+    
+    let matchStatus = true;
+    if (filterStatus === 'ativas') {
+      matchStatus = v.status === 'Buscando...' || (isConcluida && !isAvaliada);
+    } else if (filterStatus === 'encerradas') {
+      matchStatus = isConcluida && isAvaliada;
+    }
+
+    return matchEmpresa && matchFuncao && matchStatus;
   });
 
   const getBairroDisplay = (endId: string) => {
@@ -101,7 +124,7 @@ export const OperadorDemandas: React.FC = () => {
                   <Button
                     type="primary"
                     icon={<UserCheck size={14} />}
-                    onClick={() => abrirModalCandidatos(record.id)}
+                    onClick={(e) => abrirModalCandidatos(e, record.id)}
                     className="bg-indigo-600 hover:bg-indigo-700 text-xs flex items-center"
                     size="small"
                   >
@@ -113,7 +136,7 @@ export const OperadorDemandas: React.FC = () => {
                 <Button
                   type="default"
                   icon={<UserPlus size={14} />}
-                  onClick={() => abrirModalAlocacao(record.id)}
+                  onClick={(e) => abrirModalAlocacao(e, record.id)}
                   className="flex items-center gap-1 text-xs border-blue-400 text-blue-600 hover:text-blue-700 hover:border-blue-500"
                   size="small"
                 >
@@ -127,7 +150,7 @@ export const OperadorDemandas: React.FC = () => {
             <Tooltip title="Desvincular trabalhador e reabrir vaga">
               <Button
                 icon={<UserMinus size={14} />}
-                onClick={() => OperadorService.desvincularTrabalhador(record.id)}
+                onClick={(e) => { e.stopPropagation(); OperadorService.desvincularTrabalhador(record.id); }}
                 className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500"
                 size="small"
               >
@@ -156,11 +179,21 @@ export const OperadorDemandas: React.FC = () => {
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4 flex-none">
           <div className="flex items-center gap-2 text-gray-800">
-            <AlertTriangle className="text-orange-500" size={20} />
-            <span className="font-bold text-lg">Painel de Demandas em Tempo Real</span>
+            <Briefcase className="text-blue-500" size={20} />
+            <span className="font-bold text-lg">Monitoramento de Vagas</span>
           </div>
 
-          <Space className="w-full sm:w-auto">
+          <Space className="w-full sm:w-auto flex-wrap">
+            <Select
+              value={filterStatus}
+              onChange={setFilterStatus}
+              options={[
+                { value: 'ativas', label: 'Vagas Ativas' },
+                { value: 'encerradas', label: 'Vagas Encerradas' },
+                { value: 'todas', label: 'Todas as Vagas' },
+              ]}
+              className="w-40"
+            />
             <Input
               placeholder="Filtrar por Empresa..."
               prefix={<Search size={16} className="text-gray-400" />}
@@ -178,7 +211,16 @@ export const OperadorDemandas: React.FC = () => {
           </Space>
         </div>
         <div className="flex-1 w-full min-h-0 overflow-auto">
-          <Table dataSource={vagasFiltradas} columns={demandColumns} rowKey="id" pagination={{ pageSize: 8 }} />
+          <Table 
+            dataSource={vagasFiltradas} 
+            columns={demandColumns} 
+            rowKey="id" 
+            pagination={{ pageSize: 8 }} 
+            rowClassName="cursor-pointer hover:bg-gray-50 transition-colors"
+            onRow={(record) => ({
+              onClick: () => abrirDetalhes(record.id),
+            })}
+          />
         </div>
       </Card>
 
@@ -236,12 +278,13 @@ export const OperadorDemandas: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button type="default" onClick={() => abrirPerfil(c.id)}>Ver Perfil</Button>
-                      <Button danger onClick={() => OperadorService.recusarCandidato(vagaSelecionada!.id, c.id)}>Recusar</Button>
+                      <Button type="default" onClick={(e) => abrirPerfil(e, c.id)}>Ver Perfil</Button>
+                      <Button danger onClick={(e) => { e.stopPropagation(); OperadorService.recusarCandidato(vagaSelecionada!.id, c.id); }}>Recusar</Button>
                       <Button 
                         type="primary" 
                         className="bg-green-600 hover:bg-green-700"
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           await OperadorService.aprovarCandidato(vagaSelecionada!.id, c.id);
                           setIsCandidatosModalOpen(false);
                         }}
@@ -290,7 +333,7 @@ export const OperadorDemandas: React.FC = () => {
                   <ul className="space-y-2">
                     {historico.map(v => (
                       <li key={v.id} className="bg-white p-3 border border-gray-100 rounded-md shadow-sm">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center mb-1">
                           <strong className="text-gray-800">{v.funcao}</strong>
                           {v.avaliacaoTrabalhador && (
                             <span className="flex items-center text-yellow-500 font-bold text-xs bg-yellow-50 px-2 py-1 rounded">
@@ -298,7 +341,14 @@ export const OperadorDemandas: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">{v.nomeEmpresa} • {format(parseISO(v.dataHoraInicio), "dd/MM/yyyy")}</p>
+                        <p className="text-xs text-gray-500 mb-2">{v.nomeEmpresa} • {format(parseISO(v.dataHoraInicio), "dd/MM/yyyy")}</p>
+                        
+                        {v.comentarioAvaliacao && (
+                          <div className="bg-gray-50 p-2 rounded text-sm text-gray-600 border-l-2 border-yellow-400 italic flex gap-2 items-start mt-2">
+                            <MessageSquare size={14} className="mt-0.5 text-gray-400 flex-none" />
+                            <span>"{v.comentarioAvaliacao}"</span>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -306,6 +356,77 @@ export const OperadorDemandas: React.FC = () => {
                   <p className="text-gray-500 italic">Nenhuma diária registrada ou concluída ainda.</p>
                 )}
               </div>
+            </div>
+          );
+        })()}
+      </Modal>
+
+      {/* Modal de Detalhes da Vaga */}
+      <Modal
+        title={<div className="flex items-center gap-2"><Briefcase size={20} className="text-blue-500" /> Detalhes da Vaga</div>}
+        open={isDetalhesModalOpen}
+        onCancel={() => setIsDetalhesModalOpen(false)}
+        footer={[<Button key="close" onClick={() => setIsDetalhesModalOpen(false)}>Fechar</Button>]}
+      >
+        {(() => {
+          const v = vagas.find(x => x.id === vagaDetalhesId);
+          if (!v) return null;
+          
+          const alocado = v.trabalhadorId ? trabalhadoresPendentes.find(t => t.id === v.trabalhadorId) : null;
+
+          return (
+            <div className="mt-4 flex flex-col gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-bold text-gray-800">{v.funcao}</h3>
+                  <Tag color={v.status === 'Preenchida' ? 'green' : v.status === 'Buscando...' ? 'orange' : 'purple'}>{v.status}</Tag>
+                </div>
+                
+                <p className="text-gray-600 text-sm mb-1">
+                  <strong>Empresa:</strong> {v.nomeEmpresa}
+                </p>
+                <p className="text-gray-600 text-sm mb-1">
+                  <strong>Início:</strong> {format(parseISO(v.dataHoraInicio), "dd/MM/yyyy HH:mm")}
+                </p>
+                <p className="text-gray-600 text-sm mb-1">
+                  <strong>Término:</strong> {format(parseISO(v.dataHoraFim), "dd/MM/yyyy HH:mm")}
+                </p>
+                <p className="text-gray-600 text-sm mb-1">
+                  <strong>Valor da Diária:</strong> R$ {v.valor.toFixed(2)}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  <strong>Endereço:</strong> {getBairroDisplay(v.enderecoId)}
+                </p>
+              </div>
+
+              {alocado && (
+                <div className="border border-green-200 bg-green-50 rounded-lg p-4">
+                  <h4 className="font-bold text-green-800 flex items-center gap-2 mb-2">
+                    <UserCheck size={16} /> Profissional Alocado
+                  </h4>
+                  <p className="text-gray-800 font-medium">{alocado.nome}</p>
+                  <p className="text-sm text-gray-500 mt-1">Score: {alocado.score}/100</p>
+                </div>
+              )}
+
+              {v.avaliacaoTrabalhador && (
+                <div className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
+                  <h4 className="font-bold text-yellow-800 flex items-center gap-2 mb-2">
+                    <Star size={16} className="fill-yellow-600" /> Avaliação Concluída
+                  </h4>
+                  <div className="flex gap-1 mb-2">
+                    {[1,2,3,4,5].map(star => (
+                      <Star key={star} size={14} className={star <= v.avaliacaoTrabalhador! ? "fill-yellow-500 text-yellow-500" : "text-gray-300"} />
+                    ))}
+                  </div>
+                  {v.comentarioAvaliacao && (
+                    <div className="bg-white p-2.5 rounded text-sm text-gray-600 border border-yellow-100 italic flex gap-2 items-start mt-2 shadow-sm">
+                      <MessageSquare size={14} className="mt-0.5 text-yellow-500 flex-none" />
+                      <span>"{v.comentarioAvaliacao}"</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })()}

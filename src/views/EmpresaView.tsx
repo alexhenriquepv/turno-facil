@@ -22,7 +22,7 @@ export const EmpresaView: React.FC = () => {
     {
       key: 'demandas',
       icon: <Briefcase size={18} />,
-      label: 'Minhas Demandas',
+      label: 'Minhas Vagas',
     },
     {
       key: 'enderecos',

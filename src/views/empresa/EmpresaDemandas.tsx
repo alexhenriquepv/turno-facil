@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Table, Button, Card, Tag, Badge, Modal, Form, Select, DatePicker, InputNumber } from 'antd';
-import { Briefcase, UserCheck, Plus, Star } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { Table, Button, Card, Tag, Badge, Modal, Form, Select, DatePicker, InputNumber, Rate, Input } from 'antd';
+import { Briefcase, UserCheck, Plus, Star, MessageSquare } from 'lucide-react';
+import { format, parseISO, isBefore } from 'date-fns';
 import { useAppStore } from '../../store/useAppStore';
 import { EmpresaService } from '../../services/empresaService';
 
@@ -9,15 +9,34 @@ const { RangePicker } = DatePicker;
 
 export const EmpresaDemandas: React.FC = () => {
   const { vagas, empresaLogada, trabalhadoresPendentes } = useAppStore();
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCandidatosModalOpen, setIsCandidatosModalOpen] = useState(false);
   const [selectedVagaId, setSelectedVagaId] = useState<string | null>(null);
-  
+
   const [isPerfilModalOpen, setIsPerfilModalOpen] = useState(false);
   const [trabalhadorPerfilId, setTrabalhadorPerfilId] = useState<string | null>(null);
 
+  const [isAvaliacaoModalOpen, setIsAvaliacaoModalOpen] = useState(false);
+  const [vagaParaAvaliar, setVagaParaAvaliar] = useState<string | null>(null);
+
+  const [isDetalhesModalOpen, setIsDetalhesModalOpen] = useState(false);
+  const [vagaDetalhesId, setVagaDetalhesId] = useState<string | null>(null);
+
+  const [filterStatus, setFilterStatus] = useState<'ativas' | 'encerradas' | 'todas'>('ativas');
+
   const [form] = Form.useForm();
+  const [formAvaliacao] = Form.useForm();
+
+  const handleAvaliar = () => {
+    formAvaliacao.validateFields().then(async (values) => {
+      if (vagaParaAvaliar) {
+        await EmpresaService.avaliarTrabalhador(vagaParaAvaliar, values.nota, values.comentario);
+        setIsAvaliacaoModalOpen(false);
+        formAvaliacao.resetFields();
+      }
+    });
+  };
 
   const handleOk = () => {
     form.validateFields().then(async (values) => {
@@ -39,14 +58,21 @@ export const EmpresaDemandas: React.FC = () => {
     return end ? `${end.nome} (${end.bairro})` : endId;
   };
 
-  const abrirModalCandidatos = (vagaId: string) => {
+  const abrirModalCandidatos = (e: React.MouseEvent, vagaId: string) => {
+    e.stopPropagation();
     setSelectedVagaId(vagaId);
     setIsCandidatosModalOpen(true);
   };
 
-  const abrirPerfil = (id: string) => {
+  const abrirPerfil = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     setTrabalhadorPerfilId(id);
     setIsPerfilModalOpen(true);
+  };
+
+  const abrirDetalhes = (vagaId: string) => {
+    setVagaDetalhesId(vagaId);
+    setIsDetalhesModalOpen(true);
   };
 
   const columns = [
@@ -107,19 +133,47 @@ export const EmpresaDemandas: React.FC = () => {
               type="primary"
               size="small"
               icon={<UserCheck size={14} />}
-              onClick={() => abrirModalCandidatos(record.id)}
+              onClick={(e) => abrirModalCandidatos(e, record.id)}
               className="bg-indigo-600 hover:bg-indigo-700 text-xs flex items-center"
             >
               Analisar Candidatos
             </Button>
           );
         }
+        if (record.status === 'Preenchida' && isBefore(parseISO(record.dataHoraFim), new Date()) && !record.avaliacaoTrabalhador) {
+          return (
+            <Button
+              type="primary"
+              size="small"
+              icon={<Star size={14} />}
+              onClick={(e) => { e.stopPropagation(); setVagaParaAvaliar(record.id); setIsAvaliacaoModalOpen(true); }}
+              className="bg-yellow-500 hover:bg-yellow-600 border-none text-xs flex items-center"
+            >
+              Avaliar Serviço
+            </Button>
+          );
+        }
+        if (record.avaliacaoTrabalhador) {
+          return <span className="text-xs text-gray-500 font-bold flex items-center gap-1"><Star size={12} className="fill-yellow-500 text-yellow-500" /> Avaliado</span>;
+        }
         return null;
       }
     }
   ];
 
-  const vagasDaEmpresa = vagas.filter(v => v.empresaId === empresaLogada.id);
+  const vagasDaEmpresaBase = vagas.filter(v => v.empresaId === empresaLogada.id);
+  const vagasDaEmpresa = vagasDaEmpresaBase.filter(v => {
+    const isAvaliada = !!v.avaliacaoTrabalhador;
+    const isConcluida = v.status === 'Preenchida' || v.status === 'Preenchida por Operador';
+
+    if (filterStatus === 'ativas') {
+      return v.status === 'Buscando...' || (isConcluida && !isAvaliada);
+    }
+    if (filterStatus === 'encerradas') {
+      return isConcluida && isAvaliada;
+    }
+    return true;
+  });
 
   const vagaSelecionada = vagas.find(v => v.id === selectedVagaId);
   const candidatos = vagaSelecionada
@@ -130,28 +184,49 @@ export const EmpresaDemandas: React.FC = () => {
 
   return (
     <div className="p-6 h-[calc(100vh-64px)] flex flex-col overflow-hidden">
-      <Card 
-        bordered={false} 
+      <Card
+        bordered={false}
         className="shadow-sm border border-gray-200 rounded-xl flex-1 flex flex-col min-h-0"
         styles={{ body: { flex: 1, padding: '16px', minHeight: 0, display: 'flex', flexDirection: 'column' } }}
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4 flex-none">
           <div className="flex items-center gap-2 text-gray-800">
             <Briefcase className="text-purple-600" size={20} />
-            <span className="font-bold text-lg">Minhas Solicitações de Mão de Obra</span>
+            <span className="font-bold text-lg">Minhas Vagas</span>
           </div>
 
-          <Button
-            type="primary"
-            icon={<Plus size={16} />}
-            className="bg-purple-600 hover:bg-purple-700 flex items-center"
-            onClick={() => setIsModalOpen(true)}
-          >
-            Publicar Vaga
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Select
+              value={filterStatus}
+              onChange={setFilterStatus}
+              options={[
+                { value: 'ativas', label: 'Vagas Ativas' },
+                { value: 'encerradas', label: 'Vagas Encerradas' },
+                { value: 'todas', label: 'Todas as Vagas' },
+              ]}
+              className="w-full sm:w-64"
+            />
+            <Button
+              type="primary"
+              icon={<Plus size={16} />}
+              className="bg-purple-600 hover:bg-purple-700 flex items-center"
+              onClick={() => setIsModalOpen(true)}
+            >
+              Publicar Vaga
+            </Button>
+          </div>
         </div>
         <div className="flex-1 w-full min-h-0 overflow-auto">
-          <Table dataSource={vagasDaEmpresa} columns={columns} rowKey="id" pagination={{ pageSize: 8 }} />
+          <Table 
+            dataSource={vagasDaEmpresa} 
+            columns={columns} 
+            rowKey="id" 
+            pagination={{ pageSize: 8 }} 
+            rowClassName="cursor-pointer hover:bg-gray-50 transition-colors"
+            onRow={(record) => ({
+              onClick: () => abrirDetalhes(record.id),
+            })}
+          />
         </div>
       </Card>
 
@@ -232,12 +307,13 @@ export const EmpresaDemandas: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button type="default" onClick={() => abrirPerfil(c.id)}>Ver Perfil</Button>
-                      <Button danger onClick={() => EmpresaService.recusarCandidato(vagaSelecionada!.id, c.id)}>Recusar</Button>
+                      <Button type="default" onClick={(e) => abrirPerfil(e, c.id)}>Ver Perfil</Button>
+                      <Button danger onClick={(e) => { e.stopPropagation(); EmpresaService.recusarCandidato(vagaSelecionada!.id, c.id); }}>Recusar</Button>
                       <Button
                         type="primary"
                         className="bg-green-600 hover:bg-green-700"
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           await EmpresaService.aprovarCandidato(vagaSelecionada!.id, c.id);
                           setIsCandidatosModalOpen(false);
                         }}
@@ -251,6 +327,26 @@ export const EmpresaDemandas: React.FC = () => {
             })
           )}
         </div>
+      </Modal>
+
+      {/* Modal de Avaliação */}
+      <Modal
+        title={<div className="flex items-center gap-2"><Star size={20} className="text-yellow-500 fill-yellow-500" /> Avaliar Profissional</div>}
+        open={isAvaliacaoModalOpen}
+        onOk={handleAvaliar}
+        onCancel={() => setIsAvaliacaoModalOpen(false)}
+        okText="Enviar Avaliação"
+        cancelText="Cancelar"
+        okButtonProps={{ className: 'bg-yellow-500 hover:bg-yellow-600 border-none text-white' }}
+      >
+        <Form form={formAvaliacao} layout="vertical" className="mt-4">
+          <Form.Item name="nota" label="Nota do Serviço" rules={[{ required: true, message: 'Por favor, dê uma nota' }]}>
+            <Rate className="text-yellow-500" />
+          </Form.Item>
+          <Form.Item name="comentario" label="Comentário (Público)" rules={[{ required: true, message: 'Deixe um breve comentário' }]}>
+            <Input.TextArea rows={4} placeholder="Como foi o desempenho do profissional? Ele chegou no horário? Foi educado?" />
+          </Form.Item>
+        </Form>
       </Modal>
 
       {/* Modal de Perfil */}
@@ -285,7 +381,7 @@ export const EmpresaDemandas: React.FC = () => {
                   <ul className="space-y-2">
                     {historico.map(v => (
                       <li key={v.id} className="bg-white p-3 border border-gray-100 rounded-md shadow-sm">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center mb-1">
                           <strong className="text-gray-800">{v.funcao}</strong>
                           {v.avaliacaoTrabalhador && (
                             <span className="flex items-center text-yellow-500 font-bold text-xs bg-yellow-50 px-2 py-1 rounded">
@@ -293,7 +389,14 @@ export const EmpresaDemandas: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">{v.nomeEmpresa} • {format(parseISO(v.dataHoraInicio), "dd/MM/yyyy")}</p>
+                        <p className="text-xs text-gray-500 mb-2">{v.nomeEmpresa} • {format(parseISO(v.dataHoraInicio), "dd/MM/yyyy")}</p>
+
+                        {v.comentarioAvaliacao && (
+                          <div className="bg-gray-50 p-2 rounded text-sm text-gray-600 border-l-2 border-yellow-400 italic flex gap-2 items-start mt-2">
+                            <MessageSquare size={14} className="mt-0.5 text-gray-400 flex-none" />
+                            <span>"{v.comentarioAvaliacao}"</span>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -301,6 +404,74 @@ export const EmpresaDemandas: React.FC = () => {
                   <p className="text-gray-500 italic">Nenhuma diária registrada ou concluída ainda.</p>
                 )}
               </div>
+            </div>
+          );
+        })()}
+      </Modal>
+
+      {/* Modal de Detalhes da Vaga */}
+      <Modal
+        title={<div className="flex items-center gap-2"><Briefcase size={20} className="text-purple-600" /> Detalhes da Vaga</div>}
+        open={isDetalhesModalOpen}
+        onCancel={() => setIsDetalhesModalOpen(false)}
+        footer={[<Button key="close" onClick={() => setIsDetalhesModalOpen(false)}>Fechar</Button>]}
+      >
+        {(() => {
+          const v = vagas.find(x => x.id === vagaDetalhesId);
+          if (!v) return null;
+          
+          const alocado = v.trabalhadorId ? trabalhadoresPendentes.find(t => t.id === v.trabalhadorId) : null;
+
+          return (
+            <div className="mt-4 flex flex-col gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-bold text-gray-800">{v.funcao}</h3>
+                  <Tag color={v.status === 'Preenchida' ? 'green' : v.status === 'Buscando...' ? 'orange' : 'purple'}>{v.status}</Tag>
+                </div>
+                
+                <p className="text-gray-600 text-sm mb-1">
+                  <strong>Início:</strong> {format(parseISO(v.dataHoraInicio), "dd/MM/yyyy HH:mm")}
+                </p>
+                <p className="text-gray-600 text-sm mb-1">
+                  <strong>Término:</strong> {format(parseISO(v.dataHoraFim), "dd/MM/yyyy HH:mm")}
+                </p>
+                <p className="text-gray-600 text-sm mb-1">
+                  <strong>Valor da Diária:</strong> R$ {v.valor.toFixed(2)}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  <strong>Endereço:</strong> {getEnderecoDisplay(v.enderecoId)}
+                </p>
+              </div>
+
+              {alocado && (
+                <div className="border border-green-200 bg-green-50 rounded-lg p-4">
+                  <h4 className="font-bold text-green-800 flex items-center gap-2 mb-2">
+                    <UserCheck size={16} /> Profissional Alocado
+                  </h4>
+                  <p className="text-gray-800 font-medium">{alocado.nome}</p>
+                  <p className="text-sm text-gray-500 mt-1">Score: {alocado.score}/100</p>
+                </div>
+              )}
+
+              {v.avaliacaoTrabalhador && (
+                <div className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
+                  <h4 className="font-bold text-yellow-800 flex items-center gap-2 mb-2">
+                    <Star size={16} className="fill-yellow-600" /> Avaliação Concluída
+                  </h4>
+                  <div className="flex gap-1 mb-2">
+                    {[1,2,3,4,5].map(star => (
+                      <Star key={star} size={14} className={star <= v.avaliacaoTrabalhador! ? "fill-yellow-500 text-yellow-500" : "text-gray-300"} />
+                    ))}
+                  </div>
+                  {v.comentarioAvaliacao && (
+                    <div className="bg-white p-2.5 rounded text-sm text-gray-600 border border-yellow-100 italic flex gap-2 items-start mt-2 shadow-sm">
+                      <MessageSquare size={14} className="mt-0.5 text-yellow-500 flex-none" />
+                      <span>"{v.comentarioAvaliacao}"</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })()}

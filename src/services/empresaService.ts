@@ -67,5 +67,10 @@ export const EmpresaService = {
   recusarCandidato: async (vagaId: string, trabalhadorId: string) => {
     await new Promise(resolve => setTimeout(resolve, 300));
     useAppStore.getState().recusarCandidato(vagaId, trabalhadorId);
+  },
+
+  avaliarTrabalhador: async (vagaId: string, nota: number, comentario: string) => {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    useAppStore.getState().avaliarTrabalhador(vagaId, nota, comentario);
   }
 };

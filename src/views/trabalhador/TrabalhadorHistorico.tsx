@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { format, parseISO } from 'date-fns';
-import { Clock } from 'lucide-react';
+import { Clock, MessageSquare } from 'lucide-react';
 
 export const TrabalhadorHistorico: React.FC = () => {
   const { vagas, trabalhadorLogado } = useAppStore();
@@ -60,6 +60,13 @@ export const TrabalhadorHistorico: React.FC = () => {
                     <span className="flex items-center gap-1 font-bold text-yellow-500"><span className="text-lg leading-none">★</span> {vaga.avaliacaoTrabalhador}.0</span>
                   )}
                 </div>
+
+                {vaga.tipoHistorico === 'concluida' && vaga.comentarioAvaliacao && (
+                  <div className="bg-gray-50 mx-2 mb-2 mt-1 p-2.5 rounded-lg text-xs text-gray-600 border border-gray-100 flex gap-2 items-start shadow-inner">
+                    <MessageSquare size={14} className="mt-0.5 text-purple-400 flex-none" />
+                    <span className="italic leading-relaxed">"{vaga.comentarioAvaliacao}"</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>

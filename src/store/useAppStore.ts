@@ -44,6 +44,7 @@ export interface Vaga {
   candidatosIds: string[]
   candidatosRecusadosIds?: string[]
   avaliacaoTrabalhador?: number
+  comentarioAvaliacao?: string
 }
 
 export interface Trabalhador {
@@ -85,6 +86,7 @@ interface AppState {
   // Empresa Ações
   adicionarEndereco: (endereco: Omit<Endereco, 'id'>) => void
   atualizarPerfilEmpresa: (perfil: Partial<Empresa>) => void
+  avaliarTrabalhador: (vagaId: string, nota: number, comentario: string) => void
 
   // Trabalhador Ações
   atualizarFuncoesTrabalhador: (trabalhadorId: string, funcoes: string[]) => void
@@ -126,14 +128,15 @@ const mockVagasIniciais: Vaga[] = [
   { id: '1', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Garçom', dataHoraInicio: '2023-11-20T19:00', dataHoraFim: '2023-11-21T02:00', quantidade: 3, valor: 150.00, status: 'Buscando...', enderecoId: 'end1', candidatosIds: ['104', '105'] },
   { id: '2', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Vigilante', dataHoraInicio: '2023-11-21T22:00', dataHoraFim: '2023-11-22T06:00', quantidade: 1, valor: 200.00, status: 'Buscando...', enderecoId: 'end2', candidatosIds: ['101'] },
   { id: '3', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Recepcionista', dataHoraInicio: '2023-11-22T08:00', dataHoraFim: '2023-11-22T18:00', quantidade: 2, valor: 120.00, status: 'Buscando...', enderecoId: 'end3', candidatosIds: [] },
+  { id: '4', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Auxiliar de Limpeza', dataHoraInicio: '2023-11-18T08:00', dataHoraFim: '2023-11-18T18:00', quantidade: 1, valor: 110.00, status: 'Preenchida', enderecoId: 'end1', candidatosIds: ['105'], trabalhadorId: '105' },
 
   // Histórico Passado (Para preencher perfil dos candidatos com avaliações)
-  { id: 'h1', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Garçom', dataHoraInicio: '2023-10-10T19:00', dataHoraFim: '2023-10-11T02:00', quantidade: 1, valor: 150.00, status: 'Preenchida', enderecoId: 'end1', candidatosIds: ['101'], trabalhadorId: '101', avaliacaoTrabalhador: 5 },
-  { id: 'h2', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Barman', dataHoraInicio: '2023-10-15T20:00', dataHoraFim: '2023-10-16T04:00', quantidade: 1, valor: 180.00, status: 'Preenchida', enderecoId: 'end3', candidatosIds: ['101'], trabalhadorId: '101', avaliacaoTrabalhador: 4 },
-  { id: 'h3', empresaId: 'emp2', nomeEmpresa: 'Eventos Amazônia (Parceiro)', funcao: 'Recepcionista', dataHoraInicio: '2023-10-05T08:00', dataHoraFim: '2023-10-05T18:00', quantidade: 1, valor: 130.00, status: 'Preenchida', enderecoId: 'end2', candidatosIds: ['102'], trabalhadorId: '102', avaliacaoTrabalhador: 5 },
-  { id: 'h4', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Garçom', dataHoraInicio: '2023-11-01T18:00', dataHoraFim: '2023-11-02T01:00', quantidade: 1, valor: 160.00, status: 'Preenchida', enderecoId: 'end1', candidatosIds: ['104'], trabalhadorId: '104', avaliacaoTrabalhador: 5 },
-  { id: 'h5', empresaId: 'emp3', nomeEmpresa: 'Buffet Festas Finas', funcao: 'Garçom', dataHoraInicio: '2023-11-10T19:00', dataHoraFim: '2023-11-11T02:00', quantidade: 1, valor: 150.00, status: 'Preenchida', enderecoId: 'end1', candidatosIds: ['104'], trabalhadorId: '104', avaliacaoTrabalhador: 5 },
-  { id: 'h6', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Vigilante', dataHoraInicio: '2023-11-12T22:00', dataHoraFim: '2023-11-13T06:00', quantidade: 1, valor: 220.00, status: 'Preenchida', enderecoId: 'end2', candidatosIds: ['103'], trabalhadorId: '103', avaliacaoTrabalhador: 3 },
+  { id: 'h1', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Garçom', dataHoraInicio: '2023-10-10T19:00', dataHoraFim: '2023-10-11T02:00', quantidade: 1, valor: 150.00, status: 'Preenchida', enderecoId: 'end1', candidatosIds: ['101'], trabalhadorId: '101', avaliacaoTrabalhador: 5, comentarioAvaliacao: 'Excelente profissional, muito educado e proativo.' },
+  { id: 'h2', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Barman', dataHoraInicio: '2023-10-15T20:00', dataHoraFim: '2023-10-16T04:00', quantidade: 1, valor: 180.00, status: 'Preenchida', enderecoId: 'end3', candidatosIds: ['101'], trabalhadorId: '101', avaliacaoTrabalhador: 4, comentarioAvaliacao: 'Bom trabalho na coqueteleira, mas chegou alguns minutos atrasado.' },
+  { id: 'h3', empresaId: 'emp2', nomeEmpresa: 'Eventos Amazônia (Parceiro)', funcao: 'Recepcionista', dataHoraInicio: '2023-10-05T08:00', dataHoraFim: '2023-10-05T18:00', quantidade: 1, valor: 130.00, status: 'Preenchida', enderecoId: 'end2', candidatosIds: ['102'], trabalhadorId: '102', avaliacaoTrabalhador: 5, comentarioAvaliacao: 'Atendimento impecável com os convidados. Recomendo.' },
+  { id: 'h4', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Garçom', dataHoraInicio: '2023-11-01T18:00', dataHoraFim: '2023-11-02T01:00', quantidade: 1, valor: 160.00, status: 'Preenchida', enderecoId: 'end1', candidatosIds: ['104'], trabalhadorId: '104', avaliacaoTrabalhador: 5, comentarioAvaliacao: 'Muito rápida e eficiente.' },
+  { id: 'h5', empresaId: 'emp3', nomeEmpresa: 'Buffet Festas Finas', funcao: 'Garçom', dataHoraInicio: '2023-11-10T19:00', dataHoraFim: '2023-11-11T02:00', quantidade: 1, valor: 150.00, status: 'Preenchida', enderecoId: 'end1', candidatosIds: ['104'], trabalhadorId: '104', avaliacaoTrabalhador: 5, comentarioAvaliacao: 'Ótima postura durante o jantar de gala.' },
+  { id: 'h6', empresaId: 'emp1', nomeEmpresa: 'Tupi Restaurantes', funcao: 'Vigilante', dataHoraInicio: '2023-11-12T22:00', dataHoraFim: '2023-11-13T06:00', quantidade: 1, valor: 220.00, status: 'Preenchida', enderecoId: 'end2', candidatosIds: ['103'], trabalhadorId: '103', avaliacaoTrabalhador: 3, comentarioAvaliacao: 'Cumpriu a função, porém não seguiu todas as orientações da portaria.' },
 ]
 
 export const useAppStore = create<AppState>((set) => ({
@@ -253,4 +256,12 @@ export const useAppStore = create<AppState>((set) => ({
       trabalhadorLogado: updatedLogado
     };
   }),
+
+  avaliarTrabalhador: (vagaId, nota, comentario) => set((state) => ({
+    vagas: state.vagas.map(vaga =>
+      vaga.id === vagaId 
+        ? { ...vaga, avaliacaoTrabalhador: nota, comentarioAvaliacao: comentario } 
+        : vaga
+    )
+  })),
 }))

@@ -23,7 +23,7 @@ export const OperadorView: React.FC = () => {
     {
       key: 'demandas',
       icon: <Briefcase size={18} />,
-      label: 'Demandas e Vagas',
+      label: 'Monitoramento de Vagas',
     },
     {
       key: 'trabalhadores',
