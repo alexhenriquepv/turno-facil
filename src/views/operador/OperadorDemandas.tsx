@@ -216,6 +216,7 @@ export const OperadorDemandas: React.FC = () => {
             columns={demandColumns} 
             rowKey="id" 
             pagination={{ pageSize: 8 }} 
+            scroll={{ x: 'max-content' }}
             rowClassName="cursor-pointer hover:bg-gray-50 transition-colors"
             onRow={(record) => ({
               onClick: () => abrirDetalhes(record.id),

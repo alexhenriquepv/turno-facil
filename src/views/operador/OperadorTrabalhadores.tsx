@@ -84,7 +84,7 @@ export const OperadorTrabalhadores: React.FC = () => {
                 <Card bordered={false} className="shadow-sm border border-gray-200 mt-2 rounded-xl" title={
                   <div className="font-bold text-gray-800">Trabalhadores Aguardando Verificação</div>
                 }>
-                  <Table dataSource={trabalhadoresPendentes} columns={workersColumns} rowKey="id" pagination={{ pageSize: 8 }} />
+                  <Table dataSource={trabalhadoresPendentes} columns={workersColumns} rowKey="id" pagination={{ pageSize: 8 }} scroll={{ x: 'max-content' }} />
                 </Card>
               )
             },

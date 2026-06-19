@@ -3,7 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import type { Persona } from '../store/useAppStore';
 import { Dropdown, Typography, Layout as AntLayout } from 'antd';
 import type { MenuProps } from 'antd';
-import { Briefcase, User, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Briefcase, User, ShieldCheck, ChevronDown, Menu as MenuIcon } from 'lucide-react';
 
 const { Header, Content } = AntLayout;
 const { Title } = Typography;
@@ -13,7 +13,7 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { personaAtual, mudarPersona } = useAppStore();
+  const { personaAtual, mudarPersona, isMobileMenuOpen, setMobileMenuOpen } = useAppStore();
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
     mudarPersona(e.key as Persona);
@@ -57,8 +57,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <AntLayout className="min-h-screen bg-gray-50">
-      <Header className="bg-white px-6 flex items-center justify-between border-b border-gray-200 sticky top-0 z-50 shadow-sm h-16">
-        <div className="flex items-center gap-2">
+      <Header className="bg-white px-4 sm:px-6 flex items-center justify-between border-b border-gray-200 sticky top-0 z-50 shadow-sm h-16">
+        <div className="flex items-center gap-2 sm:gap-4">
+          {(personaAtual === 'empresa' || personaAtual === 'operador') && (
+            <button 
+              className="lg:hidden flex items-center justify-center p-2 rounded-md hover:bg-gray-100 text-gray-600 cursor-pointer border-none bg-transparent"
+              onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              <MenuIcon size={20} />
+            </button>
+          )}
           <div className="w-8 h-8 bg-purple-600 rounded-md flex items-center justify-center">
             <span className="text-white font-bold text-lg">T</span>
           </div>

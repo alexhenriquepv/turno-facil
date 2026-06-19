@@ -88,7 +88,7 @@ export const OperadorUsuarios: React.FC = () => {
         }
       >
         <div className="flex-1 w-full min-h-0 overflow-auto">
-          <Table dataSource={usuarios} columns={columns} rowKey="id" pagination={{ pageSize: 8 }} />
+          <Table dataSource={usuarios} columns={columns} rowKey="id" pagination={{ pageSize: 8 }} scroll={{ x: 'max-content' }} />
         </div>
       </Card>
 

@@ -222,6 +222,7 @@ export const EmpresaDemandas: React.FC = () => {
             columns={columns} 
             rowKey="id" 
             pagination={{ pageSize: 8 }} 
+            scroll={{ x: 'max-content' }}
             rowClassName="cursor-pointer hover:bg-gray-50 transition-colors"
             onRow={(record) => ({
               onClick: () => abrirDetalhes(record.id),

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Layout, Menu } from 'antd';
+import { Layout, Menu, Drawer } from 'antd';
+import { useAppStore } from '../store/useAppStore';
 import { LayoutDashboard, Briefcase, Users, UserCheck, ShieldCheck } from 'lucide-react';
 import { OperadorDashboard } from './operador/OperadorDashboard';
 import { OperadorDemandas } from './operador/OperadorDemandas';
@@ -13,6 +14,7 @@ type MenuKey = 'dashboard' | 'demandas' | 'trabalhadores' | 'empresas' | 'usuari
 
 export const OperadorView: React.FC = () => {
   const [selectedKey, setSelectedKey] = useState<MenuKey>('dashboard');
+  const { isMobileMenuOpen, setMobileMenuOpen } = useAppStore();
 
   const menuItems = [
     {
@@ -67,6 +69,7 @@ export const OperadorView: React.FC = () => {
         className="border-r border-gray-200"
         breakpoint="lg"
         collapsedWidth="0"
+        trigger={null}
       >
         <div className="p-4 border-b border-gray-100">
           <h3 className="text-gray-500 font-semibold text-xs uppercase tracking-wider">Menu Principal</h3>
@@ -79,8 +82,30 @@ export const OperadorView: React.FC = () => {
           className="border-r-0 font-medium text-gray-600"
         />
       </Sider>
-      <Layout>
-        <Content className="overflow-y-auto">
+
+      <Drawer
+        title="Menu Principal"
+        placement="left"
+        onClose={() => setMobileMenuOpen(false)}
+        open={isMobileMenuOpen}
+        styles={{ body: { padding: 0 } }}
+        width={250}
+        className="lg:hidden"
+      >
+        <Menu
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          onClick={(e) => {
+            setSelectedKey(e.key as MenuKey);
+            setMobileMenuOpen(false);
+          }}
+          items={menuItems}
+          className="border-r-0 font-medium text-gray-600 h-full"
+        />
+      </Drawer>
+
+      <Layout className="w-full">
+        <Content className="overflow-y-auto w-full">
           {renderContent()}
         </Content>
       </Layout>

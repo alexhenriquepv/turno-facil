@@ -79,7 +79,7 @@ export const OperadorEmpresas: React.FC = () => {
         }
       >
         <div className="flex-1 w-full min-h-0 overflow-auto">
-          <Table dataSource={empresas} columns={columns} rowKey="id" pagination={{ pageSize: 8 }} />
+          <Table dataSource={empresas} columns={columns} rowKey="id" pagination={{ pageSize: 8 }} scroll={{ x: 'max-content' }} />
         </div>
       </Card>
 
