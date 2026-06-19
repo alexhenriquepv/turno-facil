@@ -3,7 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import type { Persona } from '../store/useAppStore';
 import { Dropdown, Typography, Layout as AntLayout } from 'antd';
 import type { MenuProps } from 'antd';
-import { Briefcase, User, ShieldCheck, ChevronDown, Menu as MenuIcon } from 'lucide-react';
+import { Briefcase, User, ShieldCheck, ChevronDown, Menu as MenuIcon, Home } from 'lucide-react';
 
 const { Header, Content } = AntLayout;
 const { Title } = Typography;
@@ -16,7 +16,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { personaAtual, mudarPersona, isMobileMenuOpen, setMobileMenuOpen } = useAppStore();
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
-    mudarPersona(e.key as Persona);
+    if (e.key === 'landing') {
+      useAppStore.setState({ showLanding: true });
+    } else {
+      mudarPersona(e.key as Persona);
+    }
   };
 
   const items: MenuProps['items'] = [
@@ -34,6 +38,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       label: 'Operador (Plataforma)',
       key: 'operador',
       icon: <ShieldCheck size={16} />,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      label: 'Página Inicial',
+      key: 'landing',
+      icon: <Home size={16} />,
     },
   ];
 
@@ -57,7 +69,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <AntLayout className="min-h-screen bg-gray-50">
-      <Header className="bg-white px-4 sm:px-6 flex items-center justify-between border-b border-gray-200 sticky top-0 z-50 shadow-sm h-16">
+      <Header className="bg-white !px-4 sm:!px-6 flex items-center justify-between border-b border-gray-200 sticky top-0 z-50 shadow-sm h-16">
         <div className="flex items-center gap-2 sm:gap-4">
           {(personaAtual === 'empresa' || personaAtual === 'operador') && (
             <button 

@@ -66,8 +66,10 @@ interface AppState {
   usuarios: Usuario[]
   empresas: Empresa[]
   isMobileMenuOpen: boolean
+  showLanding: boolean
 
   // Ações
+  entrarPlataforma: () => void
   setMobileMenuOpen: (isOpen: boolean) => void
   mudarPersona: (persona: Persona) => void
   adicionarVaga: (vaga: Omit<Vaga, 'id' | 'status' | 'empresaId' | 'nomeEmpresa' | 'candidatosIds'>) => void
@@ -150,7 +152,9 @@ export const useAppStore = create<AppState>((set) => ({
   usuarios: mockUsuarios,
   empresas: mockEmpresasLista,
   isMobileMenuOpen: false,
+  showLanding: true,
 
+  entrarPlataforma: () => set({ showLanding: false }),
   setMobileMenuOpen: (isOpen) => set({ isMobileMenuOpen: isOpen }),
   mudarPersona: (persona) => set({ personaAtual: persona, isMobileMenuOpen: false }),
 

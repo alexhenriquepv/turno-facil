@@ -4,9 +4,10 @@ import { useAppStore } from './store/useAppStore';
 import { EmpresaView } from './views/EmpresaView';
 import { TrabalhadorView } from './views/TrabalhadorView';
 import { OperadorView } from './views/OperadorView';
+import { LandingPage } from './views/LandingPage';
 
 function App() {
-  const personaAtual = useAppStore(state => state.personaAtual);
+  const { personaAtual, showLanding } = useAppStore();
 
   const renderView = () => {
     switch (personaAtual) {
@@ -16,6 +17,10 @@ function App() {
       default: return <EmpresaView />;
     }
   };
+
+  if (showLanding) {
+    return <LandingPage />;
+  }
 
   return (
     <Layout>
