@@ -16,7 +16,17 @@ export interface Endereco {
 export interface Empresa {
   id: string
   nome: string
+  cnpj?: string
+  status?: 'Ativo' | 'Inativo' | 'Bloqueado'
   enderecos: Endereco[]
+}
+
+export interface Usuario {
+  id: string
+  nome: string
+  email: string
+  perfil: 'Admin' | 'Operador' | 'Financeiro'
+  status: 'Ativo' | 'Inativo'
 }
 
 export interface Vaga {
@@ -52,6 +62,8 @@ interface AppState {
   trabalhadorLogado: Trabalhador
   vagas: Vaga[]
   trabalhadoresPendentes: Trabalhador[]
+  usuarios: Usuario[]
+  empresas: Empresa[]
 
   // Ações
   mudarPersona: (persona: Persona) => void
@@ -63,17 +75,43 @@ interface AppState {
   aprovarTrabalhador: (trabalhadorId: string) => void
   rejeitarTrabalhador: (trabalhadorId: string) => void
   recusarCandidato: (vagaId: string, trabalhadorId: string) => void
+
+  // Operador Ações
+  adicionarEmpresa: (empresa: Omit<Empresa, 'id' | 'enderecos'>) => void
+  alterarStatusEmpresa: (empresaId: string, status: Empresa['status']) => void
+  adicionarUsuario: (usuario: Omit<Usuario, 'id'>) => void
+  alterarStatusUsuario: (usuarioId: string, status: Usuario['status']) => void
+
+  // Empresa Ações
+  adicionarEndereco: (endereco: Omit<Endereco, 'id'>) => void
+  atualizarPerfilEmpresa: (perfil: Partial<Empresa>) => void
+
+  // Trabalhador Ações
+  atualizarFuncoesTrabalhador: (trabalhadorId: string, funcoes: string[]) => void
 }
 
 const mockEmpresa: Empresa = {
   id: 'emp1',
   nome: 'Tupi Restaurantes',
+  cnpj: '12.345.678/0001-90',
+  status: 'Ativo',
   enderecos: [
     { id: 'end1', nome: 'Filial Centro', bairro: 'Centro', rua: 'Av. Eduardo Ribeiro, 100', lat: -3.1311, lng: -60.0232 },
     { id: 'end2', nome: 'Filial Distrito', bairro: 'Distrito Industrial', rua: 'Av. Buriti, 500', lat: -3.1118, lng: -59.9701 },
     { id: 'end3', nome: 'Filial Ponta Negra', bairro: 'Ponta Negra', rua: 'Av. Coronel Teixeira, 200', lat: -3.0763, lng: -60.0933 },
   ]
 };
+
+const mockEmpresasLista: Empresa[] = [
+  mockEmpresa,
+  { id: 'emp2', nome: 'Eventos Amazônia (Parceiro)', cnpj: '98.765.432/0001-10', status: 'Ativo', enderecos: [] },
+  { id: 'emp3', nome: 'Buffet Festas Finas', cnpj: '45.678.901/0001-23', status: 'Inativo', enderecos: [] },
+];
+
+const mockUsuarios: Usuario[] = [
+  { id: 'u1', nome: 'Admin Principal', email: 'admin@turnofacil.com', perfil: 'Admin', status: 'Ativo' },
+  { id: 'u2', nome: 'João Operador', email: 'joao@turnofacil.com', perfil: 'Operador', status: 'Ativo' },
+];
 
 const mockTrabalhadoresIniciais: Trabalhador[] = [
   { id: '101', nome: 'João Silva', funcoes: ['Garçom', 'Barman'], status: 'Pendente', lat: -3.1250, lng: -60.0150, score: 95 },
@@ -104,6 +142,8 @@ export const useAppStore = create<AppState>((set) => ({
   trabalhadorLogado: mockTrabalhadoresIniciais[0], // João Silva (id: 101)
   vagas: mockVagasIniciais,
   trabalhadoresPendentes: mockTrabalhadoresIniciais,
+  usuarios: mockUsuarios,
+  empresas: mockEmpresasLista,
 
   mudarPersona: (persona) => set({ personaAtual: persona }),
 
@@ -170,4 +210,47 @@ export const useAppStore = create<AppState>((set) => ({
       t.id === trabalhadorId ? { ...t, status: 'Rejeitado' } : t
     )
   })),
+
+  adicionarEmpresa: (empresa) => set((state) => ({
+    empresas: [...state.empresas, { ...empresa, id: Math.random().toString(36).substr(2, 9), enderecos: [] }]
+  })),
+
+  alterarStatusEmpresa: (empresaId, status) => set((state) => ({
+    empresas: state.empresas.map(e => e.id === empresaId ? { ...e, status } : e)
+  })),
+
+  adicionarUsuario: (usuario) => set((state) => ({
+    usuarios: [...state.usuarios, { ...usuario, id: Math.random().toString(36).substr(2, 9) }]
+  })),
+
+  alterarStatusUsuario: (usuarioId, status) => set((state) => ({
+    usuarios: state.usuarios.map(u => u.id === usuarioId ? { ...u, status } : u)
+  })),
+
+  adicionarEndereco: (endereco) => set((state) => ({
+    empresaLogada: {
+      ...state.empresaLogada,
+      enderecos: [...state.empresaLogada.enderecos, { ...endereco, id: Math.random().toString(36).substr(2, 9) }]
+    }
+  })),
+
+  atualizarPerfilEmpresa: (perfil) => set((state) => ({
+    empresaLogada: { ...state.empresaLogada, ...perfil }
+  })),
+
+  atualizarFuncoesTrabalhador: (trabalhadorId, funcoes) => set((state) => {
+    // Atualiza na lista geral
+    const updatedLista = state.trabalhadoresPendentes.map(t =>
+      t.id === trabalhadorId ? { ...t, funcoes } : t
+    );
+    // Atualiza o logado se for o mesmo
+    const updatedLogado = state.trabalhadorLogado.id === trabalhadorId
+      ? { ...state.trabalhadorLogado, funcoes }
+      : state.trabalhadorLogado;
+
+    return {
+      trabalhadoresPendentes: updatedLista,
+      trabalhadorLogado: updatedLogado
+    };
+  }),
 }))
